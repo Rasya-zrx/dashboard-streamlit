@@ -135,24 +135,41 @@ k4.metric("Pesanan Terkirim", f"{format_id_number(delivered_pct, 1)}%")
 st.divider()
 
 # Chart 1: monthly trend (line chart)
-st.subheader("Tren Pesanan dan Estimasi Penjualan")
+
+st.subheader("Tren Pendapatan Per Bulan")
+
 monthly = filtered.groupby("order_month", as_index=False).agg(
-    total_orders=("order_id", "nunique"), estimated_sales=("estimated_sales", "sum")
+    estimated_sales=("estimated_sales", "sum")
 ).sort_values("order_month")
-fig_line = px.line(monthly, x="order_month", y="total_orders", markers=True,
-                   labels={"order_month": "Bulan", "total_orders": "Jumlah pesanan"})
-fig_line.update_layout(margin=dict(l=10, r=10, t=25, b=10), xaxis_title=None, yaxis_title="Jumlah pesanan")
+
+fig_line = px.line(
+    monthly,
+    x="order_month",
+    y="estimated_sales",
+    markers=True,
+    labels={
+        "order_month": "Bulan",
+        "estimated_sales": "Pendapatan"
+    }
+)
+fig_line.update_layout(
+    margin=dict(l=10, r=10, t=25, b=10),
+    xaxis_title=None,
+    yaxis_title="Pendapatan"
+)
 st.plotly_chart(fig_line, use_container_width=True)
+
 
 left, right = st.columns(2)
 with left:
     # Chart 2: bar chart
-    st.subheader("Penjualan per Kategori")
+    st.subheader("Pendapatan per Kategori")
     by_category = filtered.groupby("category", as_index=False)["estimated_sales"].sum().sort_values("estimated_sales", ascending=False)
     fig_bar = px.bar(by_category, x="category", y="estimated_sales", text_auto=".2s",
-                     labels={"category": "Kategori", "estimated_sales": "Estimasi penjualan"})
-    fig_bar.update_layout(margin=dict(l=10, r=10, t=25, b=10), xaxis_title=None, yaxis_title="Nilai penjualan")
+                     labels={"category": "Kategori", "estimated_sales": "Pendapatan"})
+    fig_bar.update_layout(margin=dict(l=10, r=10, t=25, b=10), xaxis_title=None, yaxis_title="Pendapatan")
     st.plotly_chart(fig_bar, use_container_width=True)
+    
 with right:
     # Chart 3: pie chart
     st.subheader("Komposisi Status Pengiriman")
@@ -176,12 +193,38 @@ with left2:
         st.info("Tidak ada rating yang terisi pada kombinasi filter ini.")
 with right2:
     # Additional chart: bar chart by city
+
+    # Chart: bar chart horizontal berdasarkan kota
     st.subheader("Jumlah Pesanan per Kota")
-    by_city = filtered.groupby("city", as_index=False).agg(total_orders=("order_id", "nunique")).sort_values("total_orders", ascending=False)
-    fig_city = px.bar(by_city, x="city", y="total_orders", text_auto=True,
-                      labels={"city": "Kota", "total_orders": "Jumlah pesanan"})
-    fig_city.update_layout(margin=dict(l=10, r=10, t=25, b=10), xaxis_title=None, yaxis_title="Jumlah pesanan")
+
+    by_city = (
+        filtered.groupby("city", as_index=False)
+        .agg(total_orders=("order_id", "nunique"))
+        .sort_values("total_orders", ascending=True)
+    )
+
+    fig_city = px.bar(
+        by_city,
+        x="total_orders",
+        y="city",
+        orientation="h",
+        text="total_orders",
+        labels={
+            "city": "Kota",
+            "total_orders": "Jumlah pesanan"
+        }
+    )
+
+    fig_city.update_traces(textposition="outside")
+    fig_city.update_layout(
+        margin=dict(l=10, r=35, t=25, b=10),
+        xaxis_title="Jumlah pesanan",
+        yaxis_title=None,
+        yaxis={"categoryorder": "total ascending"}
+    )
+
     st.plotly_chart(fig_city, use_container_width=True)
+
 
 st.divider()
 st.subheader("Rincian Pesanan")
